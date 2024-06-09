@@ -464,39 +464,36 @@ static __init void teql_master_setup(struct net_device *dev)
 }
 
 static LIST_HEAD(master_dev_list);
-static int max_equalizers = 1;
-module_param(max_equalizers, int, 0);
-MODULE_PARM_DESC(max_equalizers, "Max number of link equalizers");
 
-static int __init teql_init(void)
+static __init int create_teql_devices(int num_devs)
 {
 	int i;
 	int err = -ENODEV;
 
-	for (i = 0; i < max_equalizers; i++) {
+	for (i = 0; i < num_devs; i++) {
 		struct net_device *dev;
 		struct teql_master *master;
 
 		dev = alloc_netdev(sizeof(struct teql_master), "teql%d",
 				   NET_NAME_UNKNOWN, teql_master_setup);
 		if (!dev) {
-			err = -ENOMEM;
+			err = -1;
 			break;
 		}
 
-		if ((err = register_netdev(dev))) {
+		if (register_netdev(dev)) {
 			free_netdev(dev);
+			err = -1;
 			break;
 		}
 
 		master = netdev_priv(dev);
 
 		strscpy(master->qops.id, dev->name, IFNAMSIZ);
-		err = register_qdisc(&master->qops);
-
-		if (err) {
+		if (register_qdisc(&master->qops)) {
 			unregister_netdev(dev);
 			free_netdev(dev);
+			err = -1;
 			break;
 		}
 
@@ -505,12 +502,60 @@ static int __init teql_init(void)
 	return i ? 0 : err;
 }
 
+static struct kobject *teqlctl;
+
+static ssize_t createdev_show(struct kobject *kobj, struct kobj_attribute *attr,
+			      char *buf)
+{
+	return 0;
+}
+
+static ssize_t __init createdev_store(struct kobject *kobj,
+				      struct kobj_attribute *attr, char *buf,
+				      size_t count)
+
+{
+	int num_devs = 0;
+	sscanf(buf, "%du", &num_devs);
+	if (create_teql_devices(num_devs)) {
+		return -1;
+	}
+	return count;
+}
+
+static struct kobj_attribute __initdata createdev_attributes =
+	__ATTR(createdev, 0660, createdev_show, (void *)createdev_store);
+
+static int max_equalizers = 1;
+module_param(max_equalizers, int, 0);
+MODULE_PARM_DESC(max_equalizers, "Max number of link equalizers");
+
+static int __init teql_init(void)
+{
+	int err = -ENODEV;
+
+	teqlctl = kobject_create_and_add("teqlctl", kernel_kobj);
+	if (!teqlctl) {
+		return -ENOMEM;
+	}
+
+	err = sysfs_create_file(teqlctl, &createdev_attributes.attr);
+	if (err) {
+		pr_info("failed to create the createdev file "
+			"in /sys/kernel/teqlctl\n");
+	}
+
+	err = create_teql_devices(max_equalizers);
+	return err;
+}
+
 static void __exit teql_exit(void)
 {
+	kobject_put(teqlctl);
+
 	struct teql_master *master, *nxt;
 
 	list_for_each_entry_safe(master, nxt, &master_dev_list, master_list) {
-
 		list_del(&master->master_list);
 
 		unregister_qdisc(&master->qops);
