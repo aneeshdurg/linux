@@ -94,7 +94,7 @@
 #endif
 
 static vm_fault_t do_fault(struct vm_fault *vmf);
-static vm_fault_t do_anonymous_page(struct vm_fault *vmf);
+vm_fault_t do_anonymous_page(struct vm_fault *vmf);
 static bool vmf_pte_changed(struct vm_fault *vmf);
 
 /*
@@ -5002,7 +5002,7 @@ fallback:
  * but allow concurrent faults), and pte mapped but not yet locked.
  * We return with mmap_lock still held, but pte unmapped and unlocked.
  */
-static vm_fault_t do_anonymous_page(struct vm_fault *vmf)
+vm_fault_t do_anonymous_page(struct vm_fault *vmf)
 {
 	struct vm_area_struct *vma = vmf->vma;
 	unsigned long addr = vmf->address;

@@ -1453,6 +1453,7 @@ static struct vm_area_struct *__install_special_mapping(
 	vma_set_range(vma, addr, addr + len, 0);
 	vm_flags_init(vma, (vm_flags | mm->def_flags |
 		      VM_DONTEXPAND | VM_SOFTDIRTY) & ~VM_LOCKED_MASK);
+	// pr_err("inserting special mapping with flags %lx\n", vma->vm_flags);
 	vma->vm_page_prot = vm_get_page_prot(vma->vm_flags);
 
 	vma->vm_ops = ops;

@@ -911,6 +911,7 @@ struct vm_area_struct {
 #ifdef __HAVE_PFNMAP_TRACKING
 	struct pfnmap_track_ctx *pfnmap_track_ctx;
 #endif
+	struct vm_area_struct* overlay_parent;
 } __randomize_layout;
 
 #ifdef CONFIG_NUMA

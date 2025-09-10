@@ -286,6 +286,7 @@ extern unsigned int kobjsize(const void *objp);
 #define VM_ARCH_1	0x01000000	/* Architecture-specific flag */
 #define VM_WIPEONFORK	0x02000000	/* Wipe VMA contents in child. */
 #define VM_DONTDUMP	0x04000000	/* Do not include in the core dump */
+#define VM_IS_OVERLAY	0x08000000
 
 #ifdef CONFIG_MEM_SOFT_DIRTY
 # define VM_SOFTDIRTY	0x08000000	/* Not soft dirty clean area */
@@ -784,6 +785,9 @@ static inline bool vma_is_anonymous(struct vm_area_struct *vma)
 {
 	return !vma->vm_ops;
 }
+
+
+vm_fault_t do_anonymous_page(struct vm_fault *vmf);
 
 /*
  * Indicate if the VMA is a heap for the given task; for
